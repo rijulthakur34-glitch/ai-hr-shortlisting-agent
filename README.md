@@ -1,8 +1,8 @@
-# AI HR Shortlisting Agent (Task 1)
+#  HR Shortlisting Agent 
 
 This project is an AI-powered HR shortlisting prototype that evaluates candidate resumes against a Job Description using high-performance LLMs. It features a premium "Glassmorphism" dashboard and a "Human-in-the-Loop" scoring system.
 
-## 🛠️ Setup Instructions
+##  Setup Instructions
 
 1. **Get a Groq API Key**: Go to [console.groq.com](https://console.groq.com/keys).
 2. **Environment**: Copy `.env.example` to `.env` and paste your key: `GROQ_API_KEY=gsk_...`
@@ -19,7 +19,7 @@ This project is an AI-powered HR shortlisting prototype that evaluates candidate
 
 ---
 
-## 📋 Mandatory Technical Disclosures
+##  Mandatory Technical Disclosures
 
 ### LLM Chosen
 **Model**: `llama-3.1-70b-versatile` (via Groq)
@@ -44,7 +44,7 @@ The system uses a highly structured prompt that:
 
 ---
 
-## 🛡️ Security Risk Mitigation
+##  Security Risk Mitigation
 
 This section is mandatory for the internship assessment.
 
@@ -58,7 +58,7 @@ This section is mandatory for the internship assessment.
 
 ---
 
-## 📂 Sample Outputs
+##  Sample Outputs
 - **Dashboard**: Real-time leaderboard and metrics.
 - **HTML Report**: Professional summary report generated via Jinja2 templates.
 - **JSON Export**: Full structured dataset of all evaluations for integration with other ATS systems.
