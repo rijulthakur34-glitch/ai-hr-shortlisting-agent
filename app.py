@@ -11,7 +11,7 @@ from core.reporting import generate_html_report_str
 
 load_dotenv()
 
-st.set_page_config(page_title="AI HR Agent", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="Recruitly - AI HR Agent", layout="wide", initial_sidebar_state="expanded")
 
 # --- CUSTOM CSS (PREMIUM OVERHAUL) ---
 st.markdown("""
@@ -225,8 +225,8 @@ with st.sidebar:
 # --- MAIN BANNER ---
 st.markdown("""
 <div class="main-banner">
-    <h1>💼 HR Shortlisting Agent</h1>
-    <p>Acme Corp Enterprise • Intelligent Candidate Evaluation • Human-in-the-Loop</p>
+    <h1>💼 Recruitly</h1>
+    <p>Acme Corp Enterprise • Intelligent Candidate Evaluation • Agentic Shortlisting</p>
 </div>
 """, unsafe_allow_html=True)
 

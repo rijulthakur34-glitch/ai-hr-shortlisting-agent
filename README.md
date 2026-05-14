@@ -1,4 +1,4 @@
-# HR Shortlisting Agent
+# Recruitly
 
 [![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://ai-hr-shortlisting-agent.streamlit.app)
 

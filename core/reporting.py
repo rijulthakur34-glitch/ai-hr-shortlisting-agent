@@ -20,7 +20,7 @@ HTML_TEMPLATE = """
 </style>
 </head>
 <body>
-    <h1>AI Candidate Shortlist Report</h1>
+    <h1>💼 Recruitly - Candidate Shortlist Report</h1>
     <table>
         <tr>
             <th>Candidate Details</th>
