@@ -11,8 +11,16 @@ class DimensionScore(BaseModel):
     justification: str = Field(description="One-line justification explaining the score")
 
 class CandidateEvaluation(BaseModel):
-    skills_match: DimensionScore
-    experience_relevance: DimensionScore
-    education_certs: DimensionScore
-    project_portfolio: DimensionScore
-    communication_quality: DimensionScore
+    skills_match_score: int = Field(description="Score from 0 to 10")
+    skills_match_justification: str = Field(description="One-line justification")
+    experience_relevance_score: int = Field(description="Score from 0 to 10")
+    experience_relevance_justification: str = Field(description="One-line justification")
+    education_certs_score: int = Field(description="Score from 0 to 10")
+    education_certs_justification: str = Field(description="One-line justification")
+    project_portfolio_score: int = Field(description="Score from 0 to 10")
+    project_portfolio_justification: str = Field(description="One-line justification")
+    communication_quality_score: int = Field(description="Score from 0 to 10")
+    communication_quality_justification: str = Field(description="One-line justification")
+    missing_skills: List[str] = Field(description="List of key skills from the JD that are missing in the resume")
+    experience_gaps: str = Field(description="Summary of where the candidate falls short in terms of experience")
+    suggested_questions: List[str] = Field(description="3-5 tailored interview questions to probe the candidate's gaps")

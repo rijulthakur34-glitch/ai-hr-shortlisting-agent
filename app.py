@@ -176,8 +176,14 @@ if "jd_reqs" not in st.session_state:
     st.session_state.jd_reqs = None
 if "console_logs" not in st.session_state:
     st.session_state.console_logs = []
-if "is_running" not in st.session_state:
-    st.session_state.is_running = False
+if "is_running" in st.session_state and st.session_state.is_running:
+    st.info("Agent is currently processing. Please wait...")
+
+if "comparison_summary" not in st.session_state:
+    st.session_state.comparison_summary = None
+
+if "weights" not in st.session_state:
+    st.session_state.weights = WEIGHTS.copy()
 
 def log_to_console(msg):
     st.session_state.console_logs.append(f"[{datetime.now().strftime('%H:%M:%S')}] {msg}")
@@ -196,21 +202,30 @@ with st.sidebar:
     resume_files = st.file_uploader("📄 Candidates (TXT/PDF)", type=["txt", "pdf"], accept_multiple_files=True)
     
     st.markdown("---")
-    st.markdown("### 🎯 Scoring Rubric")
-    rubric = [
-        ("Skills Match", "30%", "badge-green"),
-        ("Experience", "25%", "badge-purple"),
-        ("Projects", "20%", "badge-purple"),
-        ("Education", "15%", "badge-purple"),
-        ("Comm.", "10%", "badge-purple")
-    ]
-    for label, weight, cls in rubric:
-        st.markdown(f'<div class="badge {cls}" style="display:block; margin-bottom:5px;">{label}: {weight}</div>', unsafe_allow_html=True)
+    st.markdown("### 🎯 Dynamic Weighting")
+    
+    w_skills = st.slider("Skills Match", 0, 100, int(st.session_state.weights["skills_match"] * 100)) / 100
+    w_exp = st.slider("Experience Relevance", 0, 100, int(st.session_state.weights["experience_relevance"] * 100)) / 100
+    w_proj = st.slider("Project Portfolio", 0, 100, int(st.session_state.weights["project_portfolio"] * 100)) / 100
+    w_edu = st.slider("Education & Certs", 0, 100, int(st.session_state.weights["education_certs"] * 100)) / 100
+    w_comm = st.slider("Communication", 0, 100, int(st.session_state.weights["communication_quality"] * 100)) / 100
+    
+    total_w = w_skills + w_exp + w_proj + w_edu + w_comm
+    if total_w > 0:
+        st.session_state.weights = {
+            "skills_match": w_skills / total_w,
+            "experience_relevance": w_exp / total_w,
+            "project_portfolio": w_proj / total_w,
+            "education_certs": w_edu / total_w,
+            "communication_quality": w_comm / total_w
+        }
+    
+    st.info(f"Normalized Weights Applied (Total: {total_w:.2f})")
 
 # --- MAIN BANNER ---
 st.markdown("""
 <div class="main-banner">
-    <h1>💼 AI HR Shortlisting Agent</h1>
+    <h1>💼 HR Shortlisting Agent</h1>
     <p>Acme Corp Enterprise • Intelligent Candidate Evaluation • Human-in-the-Loop</p>
 </div>
 """, unsafe_allow_html=True)
@@ -237,27 +252,43 @@ with tab_run:
             st.session_state.console_logs = []
             log_to_console("Initializing Engine...")
             
-            os.makedirs("temp_files", exist_ok=True)
-            jd_path = os.path.join("temp_files", jd_file.name)
-            with open(jd_path, "wb") as f: f.write(jd_file.getbuffer())
-            
-            jd_text = parse_jd(jd_path) if jd_path.endswith(".txt") else parse_resume(jd_path)["text"]
-            st.session_state.jd_reqs = extract_jd_requirements(jd_text)
-            log_to_console("Job requirements extracted.")
-            
-            results = []
-            for idx, r_file in enumerate(resume_files):
-                log_to_console(f"Evaluating: {r_file.name}")
-                r_path = os.path.join("temp_files", r_file.name)
-                with open(r_path, "wb") as f: f.write(r_file.getbuffer())
+            with st.status("🚀 Processing Candidates...", expanded=True) as status:
+                os.makedirs("temp_files", exist_ok=True)
+                jd_path = os.path.join("temp_files", jd_file.name)
+                with open(jd_path, "wb") as f: f.write(jd_file.getbuffer())
                 
-                resume_data = parse_resume(r_path)
-                scores = score_candidate(resume_data["text"], st.session_state.jd_reqs)
-                scores["name"] = resume_data["name"]
-                scores["recommendation"] = "Hire" if scores["total_score"] >= 7 else "No Hire"
-                results.append(scores)
+                status.write("📄 Parsing Job Description...")
+                jd_text = parse_jd(jd_path) if jd_path.endswith(".txt") else parse_resume(jd_path)["text"]
+                st.session_state.jd_reqs = extract_jd_requirements(jd_text)
+                log_to_console("Job requirements extracted.")
                 
-            results.sort(key=lambda x: x["total_score"], reverse=True)
+                results = []
+                progress_bar = st.progress(0)
+                for idx, r_file in enumerate(resume_files):
+                    status.write(f"🔍 Evaluating: {r_file.name}...")
+                    log_to_console(f"Evaluating: {r_file.name}")
+                    r_path = os.path.join("temp_files", r_file.name)
+                    with open(r_path, "wb") as f: f.write(r_file.getbuffer())
+                    
+                    resume_data = parse_resume(r_path)
+                    scores = score_candidate(resume_data["text"], st.session_state.jd_reqs)
+                    scores["name"] = resume_data["name"]
+                    
+                    # Apply dynamic weights
+                    total_score = sum(scores[k]["score"] * st.session_state.weights[k] for k in st.session_state.weights)
+                    scores["total_score"] = round(total_score, 2)
+                    scores["recommendation"] = "Hire" if scores["total_score"] >= 7 else "No Hire"
+                    results.append(scores)
+                    progress_bar.progress((idx + 1) / len(resume_files))
+                
+                status.write("🤖 Performing Comparative Analysis...")
+                results.sort(key=lambda x: x["total_score"], reverse=True)
+                if len(results) >= 2:
+                    from core.scoring import compare_top_candidates
+                    st.session_state.comparison_summary = compare_top_candidates(results[:3], st.session_state.jd_reqs)
+                
+                status.update(label="✅ Evaluation Complete!", state="complete", expanded=False)
+                
             st.session_state.results = results
             st.session_state.is_running = False
             log_to_console("Evaluation complete!")
@@ -296,6 +327,14 @@ with tab_dashboard:
                 </div>
             </div>
             """, unsafe_allow_html=True)
+            
+        if st.session_state.comparison_summary:
+            st.markdown("### 🤖 Agentic Executive Summary")
+            st.markdown(f"""
+            <div class="glass-card" style="border-left: 4px solid #a78bfa; background: rgba(167, 139, 250, 0.05);">
+                {st.session_state.comparison_summary}
+            </div>
+            """, unsafe_allow_html=True)
 
 # --- TAB: CANDIDATES ---
 with tab_candidates:
@@ -325,6 +364,30 @@ with tab_candidates:
                     cols[i].markdown(f"### {c[key]['score']}")
                     cols[i].caption(c[key]['justification'])
                 
+                st.markdown("---")
+                i1, i2 = st.columns(2)
+                with i1:
+                    st.markdown("#### 🚩 Areas Where Lacking")
+                    st.markdown(f"**Experience Gaps:** {c['experience_gaps']}")
+                    st.markdown("**Missing Skills:**")
+                    if c['missing_skills']:
+                        for s in c['missing_skills']:
+                            st.markdown(f"- <span style='color:#f87171;'>{s}</span>", unsafe_allow_html=True)
+                    else:
+                        st.success("No major skill gaps identified!")
+                
+                with i2:
+                    st.markdown("#### ❓ Tailored Interview Questions")
+                    for q in c['suggested_questions']:
+                        st.markdown(f"- *{q}*")
+
+                st.markdown("#### 📊 Score Breakdown")
+                chart_data = {
+                    "Dimension": ["Skills", "Experience", "Education", "Projects", "Comm."],
+                    "Score": [c['skills_match']['score'], c['experience_relevance']['score'], c['education_certs']['score'], c['project_portfolio']['score'], c['communication_quality']['score']]
+                }
+                st.bar_chart(chart_data, x="Dimension", y="Score", color="#a78bfa", height=250)
+
                 st.markdown("</div>", unsafe_allow_html=True)
                 
                 with st.expander("🛠️ Human-in-the-Loop Override"):

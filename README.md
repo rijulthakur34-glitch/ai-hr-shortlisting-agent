@@ -1,8 +1,8 @@
-#  HR Shortlisting Agent 
+# HR Shortlisting Agent
 
-This project is an AI-powered HR shortlisting prototype that evaluates candidate resumes against a Job Description using high-performance LLMs. It features a premium "Glassmorphism" dashboard and a "Human-in-the-Loop" scoring system.
+This project is an advanced AI-powered HR shortlisting agent that evaluates candidate resumes against a Job Description using high-performance LLMs. It features **Agentic Comparative Analysis**, **Skill Gap Identification**, **Tailored Interview Question Generation**, and a premium "Glassmorphism" dashboard.
 
-##  Setup Instructions
+## 🛠️ Setup Instructions
 
 1. **Get a Groq API Key**: Go to [console.groq.com](https://console.groq.com/keys).
 2. **Environment**: Copy `.env.example` to `.env` and paste your key: `GROQ_API_KEY=gsk_...`
@@ -19,14 +19,14 @@ This project is an AI-powered HR shortlisting prototype that evaluates candidate
 
 ---
 
-##  Mandatory Technical Disclosures
+## 📋 Mandatory Technical Disclosures
 
 ### LLM Chosen
-**Model**: `llama-3.1-70b-versatile` (via Groq)
+**Model**: `llama-3.3-70b-versatile` (via Groq)
 **Justification**: 
-- **Latency**: Groq's LPU™ Inference Engine provides near-instant processing, which is critical for HR teams uploading 50+ resumes at once.
-- **Cost**: Groq provides a generous free tier for developers, making the prototype highly accessible without upfront billing setup.
-- **Capability**: Llama 3.1 70B shows excellent performance in following the strict Pydantic output schemas required for our scoring rubric.
+- **State-of-the-Art**: Llama 3.3 70B is the latest flagship model on Groq, providing superior reasoning for complex candidate comparisons.
+- **Latency**: Groq's LPU™ Inference Engine provides near-instant processing, even for the larger 70B parameter model.
+- **Reliability**: Uses **Native Tool Calling** (`with_structured_output`) to ensure 100% adherence to the flattened evaluation schema.
 
 ### Agent Framework
 **Framework**: LangChain `0.3.7`
@@ -44,7 +44,7 @@ The system uses a highly structured prompt that:
 
 ---
 
-##  Security Risk Mitigation
+## 🛡️ Security Risk Mitigation
 
 This section is mandatory for the internship assessment.
 
@@ -58,7 +58,9 @@ This section is mandatory for the internship assessment.
 
 ---
 
-##  Sample Outputs
-- **Dashboard**: Real-time leaderboard and metrics.
-- **HTML Report**: Professional summary report generated via Jinja2 templates.
-- **JSON Export**: Full structured dataset of all evaluations for integration with other ATS systems.
+## 📂 Advanced Agentic Features
+- **Agentic Executive Summary**: Compares the top candidates and provides a 3-paragraph decision summary.
+- **Lacking/Gap Analysis**: Explicitly identifies missing skills and experience gaps for every candidate.
+- **Interview Question Generator**: Creates 3-5 tailored questions to probe identified weaknesses.
+- **Dynamic Weighting**: Sidebar sliders allow recruiters to adjust the importance of different scoring dimensions in real-time.
+- **Visual Analytics**: Interactive bar charts for individual score breakdowns.

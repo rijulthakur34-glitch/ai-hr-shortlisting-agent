@@ -1,7 +1,6 @@
 import os
 from langchain_groq import ChatGroq
 from langchain_core.prompts import PromptTemplate
-from langchain_core.output_parsers import PydanticOutputParser
 from .models import JobDescription, CandidateEvaluation
 
 WEIGHTS = {
@@ -13,56 +12,69 @@ WEIGHTS = {
 }
 
 def extract_jd_requirements(jd_text: str) -> JobDescription:
-    parser = PydanticOutputParser(pydantic_object=JobDescription)
-    llm = ChatGroq(model_name="llama-3.1-8b-instant", temperature=0)
+    llm = ChatGroq(model_name="llama-3.3-70b-versatile", temperature=0)
+    structured_llm = llm.with_structured_output(JobDescription)
     
-    prompt = PromptTemplate(
-        template="You are an expert HR recruiter. Extract key requirements from the Job Description.\n{format_instructions}\nJD:\n{jd_text}",
-        input_variables=["jd_text"],
-        partial_variables={"format_instructions": parser.get_format_instructions()},
-    )
+    prompt = f"""You are an expert HR recruiter. Extract key requirements from the following Job Description.
     
-    chain = prompt | llm | parser
-    return chain.invoke({"jd_text": jd_text})
+JD:
+{jd_text}"""
+    
+    return structured_llm.invoke(prompt)
 
 def score_candidate(candidate_text: str, jd: JobDescription) -> dict:
-    parser = PydanticOutputParser(pydantic_object=CandidateEvaluation)
-    llm = ChatGroq(model_name="llama-3.1-8b-instant", temperature=0)
+    llm = ChatGroq(model_name="llama-3.3-70b-versatile", temperature=0)
+    structured_llm = llm.with_structured_output(CandidateEvaluation)
     
-    prompt = PromptTemplate(
-        template="""You are an expert HR recruiter evaluating a candidate resume against a Job Description.
+    prompt = f"""You are an expert HR recruiter evaluating a candidate resume against a Job Description.
 
 Requirements:
-Skills: {skills}
-Experience: {experience}
-Qualifications: {qualifications}
+Skills: {", ".join(jd.skills)}
+Experience: {jd.experience}
+Qualifications: {jd.qualifications}
 
 Resume:
-{resume}
+{candidate_text}
 
-{format_instructions}
-Evaluate the candidate on the 5 dimensions. Provide a score from 0-10 and a one-line justification for: Skills Match, Experience Relevance, Education & Certs, Project/Portfolio, Communication Quality.""",
-        input_variables=["skills", "experience", "qualifications", "resume"],
-        partial_variables={"format_instructions": parser.get_format_instructions()},
-    )
-    
-    chain = prompt | llm | parser
-    
-    eval_result = chain.invoke({
-        "skills": ", ".join(jd.skills),
-        "experience": jd.experience,
-        "qualifications": jd.qualifications,
-        "resume": candidate_text
-    })
+Evaluate the candidate on the 5 dimensions. Provide a score from 0-10 and a one-line justification for: Skills Match, Experience Relevance, Education & Certs, Project/Portfolio, Communication Quality.
+Also identify any missing skills and experience gaps."""
+
+    eval_result = structured_llm.invoke(prompt)
     
     scores = {
-        "skills_match": {"score": eval_result.skills_match.score, "justification": eval_result.skills_match.justification},
-        "experience_relevance": {"score": eval_result.experience_relevance.score, "justification": eval_result.experience_relevance.justification},
-        "education_certs": {"score": eval_result.education_certs.score, "justification": eval_result.education_certs.justification},
-        "project_portfolio": {"score": eval_result.project_portfolio.score, "justification": eval_result.project_portfolio.justification},
-        "communication_quality": {"score": eval_result.communication_quality.score, "justification": eval_result.communication_quality.justification}
+        "skills_match": {"score": eval_result.skills_match_score, "justification": eval_result.skills_match_justification},
+        "experience_relevance": {"score": eval_result.experience_relevance_score, "justification": eval_result.experience_relevance_justification},
+        "education_certs": {"score": eval_result.education_certs_score, "justification": eval_result.education_certs_justification},
+        "project_portfolio": {"score": eval_result.project_portfolio_score, "justification": eval_result.project_portfolio_justification},
+        "communication_quality": {"score": eval_result.communication_quality_score, "justification": eval_result.communication_quality_justification},
+        "missing_skills": eval_result.missing_skills,
+        "experience_gaps": eval_result.experience_gaps,
+        "suggested_questions": eval_result.suggested_questions
     }
     
-    total = sum(scores[k]["score"] * w for k, w in WEIGHTS.items())
+    total = sum(scores[k]["score"] * w for k, w in WEIGHTS.items() if k in WEIGHTS)
     scores["total_score"] = round(total, 2)
     return scores
+
+def compare_top_candidates(top_candidates: list, jd: JobDescription) -> str:
+    llm = ChatGroq(model_name="llama-3.3-70b-versatile", temperature=0.3)
+    
+    candidates_summary = ""
+    for idx, c in enumerate(top_candidates):
+        candidates_summary += f"Candidate {idx+1}: {c['name']} (Score: {c['total_score']}/10)\n"
+        candidates_summary += f"Strengths: {c['skills_match']['justification']}\n"
+        candidates_summary += f"Gaps: {c['experience_gaps']}\n\n"
+
+    prompt = f"""You are a senior hiring manager. Compare the following top candidates for the role based on their summaries and the JD requirements.
+    
+JD Requirements:
+Skills: {", ".join(jd.skills)}
+Experience: {jd.experience}
+
+Candidates:
+{candidates_summary}
+
+Provide a concise (2-3 paragraph) executive summary explaining why the #1 candidate is the preferred choice and how they edge out the others. Use a professional, decisive tone."""
+
+    response = llm.invoke(prompt)
+    return response.content

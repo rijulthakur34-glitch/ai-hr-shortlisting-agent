@@ -23,40 +23,46 @@ HTML_TEMPLATE = """
     <h1>AI Candidate Shortlist Report</h1>
     <table>
         <tr>
-            <th>Candidate Name</th>
-            <th>Total Score (Weighted)</th>
-            <th>Skills (30%)</th>
-            <th>Experience (25%)</th>
-            <th>Education (15%)</th>
-            <th>Projects (20%)</th>
-            <th>Communication (10%)</th>
+            <th>Candidate Details</th>
+            <th>Dimension Scores</th>
+            <th>Areas of Concern & Questions</th>
             <th>Recommendation</th>
         </tr>
         {% for c in candidates %}
         <tr>
-            <td><strong>{{ c.name }}</strong></td>
-            <td class="score">{{ c.total_score }} / 10</td>
             <td>
-                <span class="score">{{ c.skills_match.score }}</span>
-                <span class="justification">{{ c.skills_match.justification }}</span>
+                <strong>{{ c.name }}</strong><br>
+                <span class="score" style="font-size: 1.5em; color: #7c3aed;">{{ c.total_score }} / 10</span>
             </td>
             <td>
-                <span class="score">{{ c.experience_relevance.score }}</span>
-                <span class="justification">{{ c.experience_relevance.justification }}</span>
+                <div style="margin-bottom: 10px;">
+                    <strong>Skills:</strong> {{ c.skills_match.score }}
+                    <span class="justification">{{ c.skills_match.justification }}</span>
+                </div>
+                <div style="margin-bottom: 10px;">
+                    <strong>Exp:</strong> {{ c.experience_relevance.score }}
+                    <span class="justification">{{ c.experience_relevance.justification }}</span>
+                </div>
+                <div style="margin-bottom: 10px;">
+                    <strong>Proj:</strong> {{ c.project_portfolio.score }}
+                    <span class="justification">{{ c.project_portfolio.justification }}</span>
+                </div>
             </td>
             <td>
-                <span class="score">{{ c.education_certs.score }}</span>
-                <span class="justification">{{ c.education_certs.justification }}</span>
+                <div style="margin-bottom: 10px;">
+                    <strong>🚩 Gaps:</strong> {{ c.experience_gaps }}<br>
+                    <strong>Missing Skills:</strong> {{ c.missing_skills | join(', ') if c.missing_skills else 'None' }}
+                </div>
+                <div>
+                    <strong>❓ Interview Questions:</strong>
+                    <ul style="margin: 5px 0; padding-left: 20px; font-size: 0.9em;">
+                    {% for q in c.suggested_questions %}
+                        <li>{{ q }}</li>
+                    {% endfor %}
+                    </ul>
+                </div>
             </td>
-            <td>
-                <span class="score">{{ c.project_portfolio.score }}</span>
-                <span class="justification">{{ c.project_portfolio.justification }}</span>
-            </td>
-            <td>
-                <span class="score">{{ c.communication_quality.score }}</span>
-                <span class="justification">{{ c.communication_quality.justification }}</span>
-            </td>
-            <td class="{{ 'hire' if c.recommendation == 'Hire' else 'no-hire' }}">
+            <td class="{{ 'hire' if c.recommendation == 'Hire' else 'no-hire' }}" style="text-align: center;">
                 {{ c.recommendation }}
             </td>
         </tr>
